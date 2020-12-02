@@ -31,17 +31,15 @@ class CVSS():
       except KeyError():
         raise KeyError('Not all mandatory metrics were set.')
       
-      base_score = self.calculate_base_score()
+      self.base_score = self.calculate_base_score()
       
 
   
-  def calculate_score(self, modified=False):
+  def calculate_base_score(self, modified=False):
     if modified:
       pass
 
     iss = 1 - ((1 - self.assign_numerical_values('c', self.c)) * (1 - self.assign_numerical_values('i', self.i)) * (1 - self.assign_numerical_values('a', self.a)))
-
-    # pr = self.assign_numerical_values('pr', self.pr)
 
     if self.s == 'c':
       impact = 7.52 * (iss - 0.029) - 3.25 * (iss - 0.02)**15
@@ -50,7 +48,16 @@ class CVSS():
       impact = 6.42 * iss
       pr = self.assign_numerical_values('pr', self.pr)
 
-    explotability = 8.22 * self.assign_numerical_values(self.av, )
+    explotability = 8.22 * self.assign_numerical_values('av', self.av) * self.assign_numerical_values('ac', self.ac) * pr * self.assign_numerical_values('ui', self.ui)
+
+    if impact <= 0:
+      base_score = 0
+    elif self.s == 'c':
+      base_score = roundup(min([1.08 * (impact + explotability), 10]))
+    else:
+      base_score = roundup(min([(impact + explotability), 10]))
+    
+    return base_score
 
   def assign_numerical_values(self, type, value, modifier=False):
 
@@ -111,6 +118,14 @@ class CVSS():
     return return_value
 
 
+def roundup(floating_number):
+  if type(floating_number) == int:
+    return floating_number
+  elif type(floating_number) == str or type(floating_number) == list:
+    raise ValueError("How did you do this.")
+  else:
+    return round(floating_number, 1)
+
 metrics = {
   "AV": "N",
   "AC": "L",
@@ -122,3 +137,4 @@ metrics = {
   "A": "H",
 }
 cvss = CVSS(metrics=metrics)
+print(cvss.base_score)

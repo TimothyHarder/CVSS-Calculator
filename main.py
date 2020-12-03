@@ -59,6 +59,7 @@ class CVSS():
     
     return base_score
 
+
   def assign_numerical_values(self, type, value, modifier=False):
 
     base_metrics = {
@@ -78,7 +79,7 @@ class CVSS():
       "RC": {'X': 1, 'C': 1, 'R': 0.96, 'U':0.92},
     }
 
-    enviornmental_metrics = {
+    environmental_metrics = {
       "CR": {'X': 1,'H': 1.5,'M': 1,'L': 0.5},
       "IR": {'X': 1,'H': 1.5,'M': 1,'L': 0.5},
       "AR": {'X': 1,'H': 1.5,'M': 1,'L': 0.5},
@@ -106,9 +107,9 @@ class CVSS():
       if value.upper() in temporal_metrics[type.upper()]:
         return_value = temporal_metrics[type.upper()][value.upper()]
 
-    if type.upper() in enviornmental_metrics:
-      if value.upper() in enviornmental_metrics[type.upper()]:
-        return_value = enviornmental_metrics[type.upper()][value.upper()]
+    if type.upper() in environmental_metrics:
+      if value.upper() in environmental_metrics[type.upper()]:
+        return_value = environmental_metrics[type.upper()][value.upper()]
 
     if modifier and type.upper() == 'PR':
       return_value = modified_pr[value.upper()]
@@ -126,6 +127,7 @@ def roundup(floating_number):
   else:
     return round(floating_number, 1)
 
+
 metrics = {
   "AV": "N",
   "AC": "L",
@@ -136,5 +138,6 @@ metrics = {
   "I": "H",
   "A": "H",
 }
+
 cvss = CVSS(metrics=metrics)
 print(cvss.base_score)

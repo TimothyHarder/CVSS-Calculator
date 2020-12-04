@@ -27,28 +27,76 @@ class CVSS():
         self.c = self.metrics['c'].lower()
         self.i = self.metrics['i'].lower()
         self.a = self.metrics['a'].lower()
+        self.e = "x"
+        self.rl = "x"
+        self.rc = "x"
+        self.cr = "x"
+        self.ir = "x"
+        self.ar = "x"
+        self.mav = "x"
+        self.mac ="x"
+        self.mpr = "x"
+        self.mui = "x"
+        self.ms = "x"
+        self.mc = "x"
+        self.mi = "x"
+        self.ma = "x"
 
       except KeyError():
         raise KeyError('Not all mandatory metrics were set.')
       
-      self.base_score = self.calculate_base_score()
+      self.base_score = self.__calculate_base_score()
+      self.temporal_score = None
+      self.environmental_score = None
       
 
+  def set_temporal_metrics(self, temporal_metrics):
+    temporal_metrics = {k.lower(): v for k, v in temporal_metrics.items()}
+    try:
+      self.e = temporal_metrics["e"].lower()
+      self.rl = temporal_metrics["rl"].lower()
+      self.rc = temporal_metrics["rc"].lower()
+    except KeyError():
+      raise KeyError('Not all temporal metrics were set.')
+    
+    self.temporal_score = self.__calculate_temporal_score()
+    return self.temporal_score
   
-  def calculate_base_score(self, modified=False):
-    if modified:
-      pass
 
-    iss = 1 - ((1 - self.assign_numerical_values('c', self.c)) * (1 - self.assign_numerical_values('i', self.i)) * (1 - self.assign_numerical_values('a', self.a)))
+  def set_environmental_metrics(self, environmental_metrics):
+    environmental_metrics = {k.lower(): v for k, v in environmental_metrics.items()}
+    try:
+      self.cr = environmental_metrics["cr"].lower()
+      self.ir = environmental_metrics["ir"].lower()
+      self.ar = environmental_metrics["ar"].lower()
+      self.mav = environmental_metrics["mav"].lower()
+      self.mac = environmental_metrics["mac"].lower()
+      self.mpr = environmental_metrics["mpr"].lower()
+      self.mui = environmental_metrics["mui"].lower()
+      self.ms = environmental_metrics["ms"].lower()
+      self.mc = environmental_metrics["mc"].lower()
+      self.mi = environmental_metrics["mi"].lower()
+      self.ma = environmental_metrics["ma"].lower()
+
+    except KeyError():
+      raise KeyError('Not all evnironmental metrics were set.')
+    
+    self.environmental_score = self.__calculate_environmental_score()
+    return self.environmental_score
+
+
+  def __calculate_base_score(self):
+
+    iss = 1 - ((1 - self.__assign_numerical_values('c', self.c)) * (1 - self.__assign_numerical_values('i', self.i)) * (1 - self.__assign_numerical_values('a', self.a)))
 
     if self.s == 'c':
       impact = 7.52 * (iss - 0.029) - 3.25 * (iss - 0.02)**15
-      pr = self.assign_numerical_values('pr', self.pr, modifier=True)
+      pr = self.__assign_numerical_values('pr', self.pr, modifier=True)
     else:
       impact = 6.42 * iss
-      pr = self.assign_numerical_values('pr', self.pr)
+      pr = self.__assign_numerical_values('pr', self.pr)
 
-    explotability = 8.22 * self.assign_numerical_values('av', self.av) * self.assign_numerical_values('ac', self.ac) * pr * self.assign_numerical_values('ui', self.ui)
+    explotability = 8.22 * self.__assign_numerical_values('av', self.av) * self.__assign_numerical_values('ac', self.ac) * pr * self.__assign_numerical_values('ui', self.ui)
 
     if impact <= 0:
       base_score = 0
@@ -60,7 +108,31 @@ class CVSS():
     return base_score
 
 
-  def assign_numerical_values(self, type, value, modifier=False):
+  def __calculate_temporal_score(self):
+    return roundup(self.base_score * self.e * self.rl * self.rc)
+
+
+  def __calculate_environmental_score(self):
+    miss = min(
+      1 - (
+        (1 - self.__assign_numerical_values('cr', self.cr) * self.__assign_numerical_values('mc', self.mc)) * 
+        (1 - self.__assign_numerical_values('ir', self.ir) * self.__assign_numerical_values('mi', self.mi)) * 
+        (1 - self.__assign_numerical_values('ar', self.ar) * self.__assign_numerical_values('ma', self.ma))
+        ),
+      0.915
+    )
+
+    if self.ms == 'c':
+      impact = 7.52 * (miss - 0.029) - 3.25 * (miss * 0.9731 - 0.02)**13
+      mpr = self.__assign_numerical_values('mpr', self.mpr, modifier=True)
+    else:
+      impact = 6.42 * miss
+      mpr = self.__assign_numerical_values('mpr', self.mpr)
+
+    print(str(miss))
+
+
+  def __assign_numerical_values(self, type, value, modifier=False):
 
     base_metrics = {
       "AV": {'N': 0.85, 'A': 0.62, 'L': 0.55, 'P': 0.2},
@@ -128,7 +200,7 @@ def roundup(floating_number):
     return round(floating_number, 1)
 
 
-metrics = {
+base_metrics = {
   "AV": "N",
   "AC": "L",
   "PR": "N",
@@ -139,5 +211,29 @@ metrics = {
   "A": "H",
 }
 
-cvss = CVSS(metrics=metrics)
+temporal_metrics = {
+  "E": "X",
+  "RL": "X",
+  "RC": "X",
+}
+
+environmental_metrics = {
+  "CR": "X",
+  "IR": "X",
+  "AR": "X",
+  "MAV": "N",
+  "MAC": "L",
+  "MPR": "N",
+  "MUI": "N",
+  "MS": "U",
+  "MC": "H",
+  "MI": "H",
+  "MA": "H",
+}
+
+
+
+cvss = CVSS(metrics=base_metrics)
+cvss.set_environmental_metrics(environmental_metrics)
+
 print(cvss.base_score)

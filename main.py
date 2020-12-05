@@ -87,7 +87,11 @@ class CVSS():
 
   def __calculate_base_score(self):
 
-    iss = 1 - ((1 - self.__assign_numerical_values('c', self.c)) * (1 - self.__assign_numerical_values('i', self.i)) * (1 - self.__assign_numerical_values('a', self.a)))
+    iss = 1 - (
+      (1 - self.__assign_numerical_values('c', self.c)) * 
+      (1 - self.__assign_numerical_values('i', self.i)) * 
+      (1 - self.__assign_numerical_values('a', self.a))
+      )
 
     if self.s == 'c':
       impact = 7.52 * (iss - 0.029) - 3.25 * (iss - 0.02)**15
@@ -192,16 +196,23 @@ class CVSS():
 
 
 def roundup(floating_number):
+  print(floating_number)
   if type(floating_number) == int:
     return floating_number
   elif type(floating_number) == str or type(floating_number) == list:
     raise ValueError("How did you do this.")
   else:
+    split_number = str(floating_number).split('.')
+
+    if (split_number[1][1:]) != 0:
+      split_number[1] = split_number[1][:1] + '9'
+      floating_number = float('.'.join(split_number))
+      
     return round(floating_number, 1)
 
 
 base_metrics = {
-  "AV": "N",
+  "AV": "A",
   "AC": "L",
   "PR": "N",
   "UI": "N",

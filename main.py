@@ -168,7 +168,12 @@ class CVSS():
 
 
   def __calculate_temporal_score(self):
-    return roundup(self.base_score * self.__assign_numerical_values('e', self.e) * self.__assign_numerical_values('rl', self.rl) * self.__assign_numerical_values('rc', self.rc))
+    return roundup(
+      self.base_score * 
+      self.__assign_numerical_values('e', self.e) * 
+      self.__assign_numerical_values('rl', self.rl) * 
+      self.__assign_numerical_values('rc', self.rc)
+    )
 
 
   def __calculate_environmental_score(self):
@@ -210,7 +215,34 @@ class CVSS():
     return env_score
 
 
-  def __assign_numerical_values(self, type, value, modifier=False):
+  def __assign_numerical_values(self, metric_type, value, modifier=False):
+
+    if value.lower() == 'x':
+      modified_type_map = {
+        'mav': 'av',
+        'mac': 'ac',
+        'mpr': 'pr',
+        'mui': 'ui',
+        'ms': 's',
+        'mc': 'c',
+        'mi': 'i',
+        'ma': 'a',
+      }
+      modified_value_map = {
+        'av': self.av,
+        'ac': self.ac,
+        'pr': self.pr,
+        'ui': self.ui,
+        's': self.s,
+        'c': self.c,
+        'i': self.i,
+        'a': self.a,
+      }
+      if metric_type in modified_type_map.keys():
+        metric_type = modified_type_map[metric_type]
+        value = modified_value_map[metric_type]
+        # print(metric_type, value)
+
 
     base_metrics = {
       "AV": {'N': 0.85, 'A': 0.62, 'L': 0.55, 'P': 0.2},
@@ -225,7 +257,7 @@ class CVSS():
 
     temporal_metrics = {
       "E": {'X': 1, 'H': 1, 'F': 0.97, 'P': 0.94, 'U': 0.91},
-      "RL": {'X': 1, 'U': 1, 'W': 0.97, 'T': 0.94, 'O': 0.91},
+      "RL": {'X': 1, 'U': 1, 'W': 0.97, 'T': 0.96, 'O': 0.95},
       "RC": {'X': 1, 'C': 1, 'R': 0.96, 'U':0.92},
     }
 
@@ -251,23 +283,23 @@ class CVSS():
 
     return_value = None
 
-    if type.upper() in base_metrics:
-      if value.upper() in base_metrics[type.upper()]:
-        return_value = base_metrics[type.upper()][value.upper()]
+    if metric_type.upper() in base_metrics:
+      if value.upper() in base_metrics[metric_type.upper()]:
+        return_value = base_metrics[metric_type.upper()][value.upper()]
 
-    if type.upper() in temporal_metrics:
-      if value.upper() in temporal_metrics[type.upper()]:
-        return_value = temporal_metrics[type.upper()][value.upper()]
+    if metric_type.upper() in temporal_metrics:
+      if value.upper() in temporal_metrics[metric_type.upper()]:
+        return_value = temporal_metrics[metric_type.upper()][value.upper()]
 
-    if type.upper() in environmental_metrics:
-      if value.upper() in environmental_metrics[type.upper()]:
-        return_value = environmental_metrics[type.upper()][value.upper()]
+    if metric_type.upper() in environmental_metrics:
+      if value.upper() in environmental_metrics[metric_type.upper()]:
+        return_value = environmental_metrics[metric_type.upper()][value.upper()]
 
     # 'PR' (Privileges Required) values L and H get modified if the 'S' (scope) is changed.
     # if 'S' == 'C', PR: L = 0.68 and PR: H = 0.5
-    if modifier and type.upper() == 'PR':
+    if modifier and metric_type.upper() == 'PR':
       return_value = modified_pr[value.upper()]
-    elif modifier and type.upper() == 'MPR':
+    elif modifier and metric_type.upper() == 'MPR':
       return_value = modified_pr[value.upper()]
     
     return return_value
@@ -292,37 +324,38 @@ def roundup(floating_number):
 base_metrics = {
   "AV": "N",
   "AC": "L",
-  "PR": "N",
-  "UI": "R",
-  "S": "C",
-  "C": "N",
+  "PR": "L",
+  "UI": "N",
+  "S": "U",
+  "C": "H",
   "I": "H",
-  "A": "N",
+  "A": "H",
 }
 
 temporal_metrics = {
-  "E": "X",
-  "RL": "X",
-  "RC": "X",
+  "E": "P",
+  "RL": "O",
+  "RC": "C",
 }
 
 environmental_metrics = {
-  "CR": "X",
-  "IR": "X",
-  "AR": "X",
-  "MAV": "N",
-  "MAC": "L",
-  "MPR": "N",
-  "MUI": "N",
-  "MS": "U",
-  "MC": "H",
-  "MI": "H",
-  "MA": "H",
+  "CR": "H",
+  "IR": "H",
+  "AR": "H",
+  "MAV": "X",
+  "MAC": "X",
+  "MPR": "X",
+  "MUI": "X",
+  "MS": "X",
+  "MC": "X",
+  "MI": "X",
+  "MA": "X",
 }
 
 
 '''
 cvss = CVSS(metrics=base_metrics)
+cvss.set_temporal_metrics(temporal_metrics)
 cvss.set_environmental_metrics(environmental_metrics)
 
 cvss.print_scores()
